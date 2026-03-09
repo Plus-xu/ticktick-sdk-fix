@@ -268,7 +268,8 @@ class SessionHandler:
         # Extract cookies
         cookies: dict[str, str] = {}
         for cookie in response.cookies.jar:
-            cookies[cookie.name] = cookie.value
+            if cookie.value is not None:
+                cookies[cookie.name] = cookie.value
 
         # Also add the token as a cookie (required by V2 API)
         if "t" not in cookies and "token" in data:
@@ -339,7 +340,8 @@ class SessionHandler:
         # Extract cookies
         cookies: dict[str, str] = {}
         for cookie in response.cookies.jar:
-            cookies[cookie.name] = cookie.value
+            if cookie.value is not None:
+                cookies[cookie.name] = cookie.value
 
         if "t" not in cookies and "token" in data:
             cookies["t"] = data["token"]
