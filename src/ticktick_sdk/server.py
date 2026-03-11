@@ -2804,7 +2804,7 @@ def main(transport: str = "stdio", port: int = 8000) -> None:
     _apply_tool_filtering()
 
     if transport == "http":
-        mcp.run(transport="streamable-http", host="0.0.0.0", port=port)
+        mcp.run(transport="streamable-http")
     else:
         mcp.run()
 
