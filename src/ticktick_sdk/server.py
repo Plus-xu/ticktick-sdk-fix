@@ -2793,10 +2793,20 @@ def _apply_tool_filtering():
     )
 
 
-def main():
+def main(transport: str = "stdio", port: int = 8000) -> None:
     """Main entry point for the TickTick MCP server."""
+    import os
+
+    # Allow env var overrides
+    transport = os.environ.get("TICKTICK_TRANSPORT", transport)
+    port = int(os.environ.get("TICKTICK_PORT", port))
+
     _apply_tool_filtering()
-    mcp.run()
+
+    if transport == "http":
+        mcp.run(transport="streamable-http", host="0.0.0.0", port=port)
+    else:
+        mcp.run()
 
 
 if __name__ == "__main__":
