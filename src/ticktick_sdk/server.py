@@ -2801,6 +2801,11 @@ def main(transport: str = "stdio", port: int = 8000) -> None:
     transport = os.environ.get("TICKTICK_TRANSPORT", transport)
     port = int(os.environ.get("TICKTICK_PORT", port))
 
+    if transport == "http":
+        bind_host = os.environ.get("FASTMCP_HOST", "0.0.0.0")
+        stateless = os.environ.get("FASTMCP_STATELESS_HTTP", "true").lower() == "true"
+        mcp.settings = mcp.settings.model_copy(update={"host": bind_host, "stateless_http": stateless, "port": port})
+
     _apply_tool_filtering()
 
     if transport == "http":
