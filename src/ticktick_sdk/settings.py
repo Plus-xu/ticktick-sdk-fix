@@ -192,7 +192,7 @@ class TickTickSettings(BaseSettings):
             )
 
     def validate_all_ready(self) -> None:
-        """Validate both V1 and V2 APIs are ready. Raises if not configured."""
+        """Validate V1 API is ready. V2 credentials are optional (OAuth-only mode)."""
         errors: list[str] = []
         missing: list[str] = []
 
@@ -202,13 +202,6 @@ class TickTickSettings(BaseSettings):
                 missing.append("TICKTICK_CLIENT_ID")
             if not self.client_secret.get_secret_value():
                 missing.append("TICKTICK_CLIENT_SECRET")
-
-        if not self.has_v2_credentials:
-            errors.append("V2 session credentials incomplete")
-            if not self.username:
-                missing.append("TICKTICK_USERNAME")
-            if not self.password.get_secret_value():
-                missing.append("TICKTICK_PASSWORD")
 
         if errors:
             raise TickTickConfigurationError(

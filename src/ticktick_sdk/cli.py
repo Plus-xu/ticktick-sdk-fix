@@ -191,6 +191,8 @@ def run_server(
     enabled_tools: str | None = None,
     enabled_modules: str | None = None,
     host: str | None = None,
+    transport: str = "stdio",
+    port: int = 8000,
 ) -> int:
     """
     Run the MCP server.
@@ -202,6 +204,8 @@ def run_server(
         enabled_tools: Comma-separated list of specific tools to enable.
         enabled_modules: Comma-separated list of modules to enable.
         host: API host ("ticktick.com" or "dida365.com").
+        transport: Transport to use: "stdio" (default) or "http".
+        port: Port for HTTP transport (default: 8000).
 
     Returns:
         Exit code (0 for success, non-zero for error).
@@ -232,7 +236,7 @@ def run_server(
 
     from ticktick_sdk.server import main as server_main
 
-    server_main()
+    server_main(transport=transport, port=port)
     return 0
 
 
@@ -356,6 +360,22 @@ Available modules: tasks, projects, folders, columns, tags, habits, user, focus
         ),
     )
 
+    server_parser.add_argument(
+        "--transport",
+        type=str,
+        default="stdio",
+        choices=["stdio", "http"],
+        help="Transport to use: stdio (default) or http (for remote/tunnel access).",
+    )
+
+    server_parser.add_argument(
+        "--port",
+        type=int,
+        default=8000,
+        metavar="PORT",
+        help="Port for HTTP transport (default: 8000). Can also be set via TICKTICK_PORT.",
+    )
+
     # Auth subcommand
     auth_parser = subparsers.add_parser(
         "auth",
@@ -421,6 +441,8 @@ def main() -> int | NoReturn:
             enabled_tools=args.enabledTools,
             enabled_modules=args.enabledModules,
             host=args.host,
+            transport=args.transport,
+            port=args.port,
         )
     elif args.command == "auth":
         return run_auth(manual=args.manual)

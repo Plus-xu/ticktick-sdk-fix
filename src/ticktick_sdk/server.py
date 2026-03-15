@@ -2815,8 +2815,30 @@ def _apply_tool_filtering():
     )
 
 
-def main():
+def main(transport: str = "stdio", port: int = 8000) -> None:
     """Main entry point for the TickTick MCP server."""
+    import os
+
+    # Allow env var overrides
+    transport = os.environ.get("TICKTICK_TRANSPORT", transport)
+    port = int(os.environ.get("TICKTICK_PORT", port))
+
+    if transport == "http":
+        from mcp.server.fastmcp.server import TransportSecuritySettings
+        bind_host = os.environ.get("FASTMCP_HOST", "0.0.0.0")
+        stateless = os.environ.get("FASTMCP_STATELESS_HTTP", "true").lower() == "true"
+        # When binding to 0.0.0.0, assume a reverse proxy handles security and
+        # disable DNS rebinding protection (which only allows localhost Host headers).
+        # Set FASTMCP_DNS_REBINDING_PROTECTION=true to re-enable if needed.
+        dns_protection_default = bind_host in ("127.0.0.1", "localhost", "::1")
+        dns_protection = os.environ.get("FASTMCP_DNS_REBINDING_PROTECTION", str(dns_protection_default)).lower() == "true"
+        mcp.settings = mcp.settings.model_copy(update={
+            "host": bind_host,
+            "stateless_http": stateless,
+            "port": port,
+            "transport_security": TransportSecuritySettings(enable_dns_rebinding_protection=dns_protection),
+        })
+
     _apply_tool_filtering()
 
     bearer_token = os.environ.get("MCP_BEARER_TOKEN")

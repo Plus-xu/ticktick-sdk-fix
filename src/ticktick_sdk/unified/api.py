@@ -313,10 +313,12 @@ class UnifiedTickTickAPI:
                 self._inbox_id = session.inbox_id
                 logger.info("V2 client authenticated")
             else:
-                errors.append("V2 credentials not provided")
+                logger.info("V2 credentials not provided — running in V1-only (OAuth) mode")
+                self._v2_client = None
         except Exception as e:
             errors.append(f"V2 initialization failed: {e}")
             logger.error("Failed to initialize V2 client: %s", e)
+            self._v2_client = None
 
         # Create router
         self._router = APIRouter(
@@ -328,14 +330,11 @@ class UnifiedTickTickAPI:
         verification = await self._router.verify_clients()
         if not verification.get("v1"):
             errors.append("V1 authentication verification failed")
-        if not verification.get("v2"):
-            errors.append("V2 authentication verification failed")
-
-        # Check if we have both APIs
-        if not self._router.is_fully_configured:
             raise TickTickConfigurationError(
-                "Both V1 and V2 APIs are required. " + "; ".join(errors),
+                "V1 authentication failed. " + "; ".join(errors),
             )
+        if not verification.get("v2"):
+            logger.warning("V2 not available — some features (list_all_tasks, move_task, tags) will be unavailable")
 
         self._initialized = True
         logger.info("Unified API initialized successfully")
