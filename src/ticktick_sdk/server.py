@@ -2841,56 +2841,60 @@ def main(transport: str = "stdio", port: int = 8000) -> None:
 
     _apply_tool_filtering()
 
-    bearer_token = os.environ.get("MCP_BEARER_TOKEN")
+    if transport == "http":
+        bearer_token = os.environ.get("MCP_BEARER_TOKEN")
 
-    import uvicorn
-    from starlette.types import ASGIApp, Receive, Scope, Send
+        import uvicorn
+        from starlette.types import ASGIApp, Receive, Scope, Send
 
-    starlette_app: ASGIApp = mcp.streamable_http_app()
+        starlette_app: ASGIApp = mcp.streamable_http_app()
 
-    if bearer_token:
-        logger.info("Bearer token authentication enabled")
+        if bearer_token:
+            logger.info("Bearer token authentication enabled")
 
-        class BearerTokenMiddleware:
-            """Simple ASGI middleware that checks for a static bearer token."""
+            class BearerTokenMiddleware:
+                """Simple ASGI middleware that checks for a static bearer token."""
 
-            def __init__(self, app: ASGIApp, token: str):
-                self.app = app
-                self.token = token
+                def __init__(self, app: ASGIApp, token: str):
+                    self.app = app
+                    self.token = token
 
-            async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
-                if scope["type"] == "http":
-                    path = scope.get("path", "")
-                    # Allow health check without auth
-                    if path == "/health":
-                        await self.app(scope, receive, send)
-                        return
-                    headers = dict(scope.get("headers", []))
-                    auth = headers.get(b"authorization", b"").decode()
-                    if auth != f"Bearer {self.token}":
-                        response = JSONResponse(
-                            {"error": "unauthorized"}, status_code=401
-                        )
-                        await response(scope, receive, send)
-                        return
-                await self.app(scope, receive, send)
+                async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+                    if scope["type"] == "http":
+                        path = scope.get("path", "")
+                        # Allow health check without auth
+                        if path == "/health":
+                            await self.app(scope, receive, send)
+                            return
+                        headers = dict(scope.get("headers", []))
+                        auth = headers.get(b"authorization", b"").decode()
+                        if auth != f"Bearer {self.token}":
+                            response = JSONResponse(
+                                {"error": "unauthorized"}, status_code=401
+                            )
+                            await response(scope, receive, send)
+                            return
+                    await self.app(scope, receive, send)
 
-        starlette_app = BearerTokenMiddleware(starlette_app, bearer_token)
+            starlette_app = BearerTokenMiddleware(starlette_app, bearer_token)
 
-    port = int(os.environ.get("PORT", "8000"))
-    logger.info("Starting TickTick MCP server on 0.0.0.0:%d/mcp", port)
+        port = int(os.environ.get("PORT", "8000"))
+        logger.info("Starting TickTick MCP server on 0.0.0.0:%d/mcp", port)
 
-    config = uvicorn.Config(
-        starlette_app,
-        host="0.0.0.0",
-        port=port,
-        log_level="info",
-    )
-    server = uvicorn.Server(config)
+        config = uvicorn.Config(
+            starlette_app,
+            host="0.0.0.0",
+            port=port,
+            log_level="info",
+        )
+        server = uvicorn.Server(config)
 
-    import anyio
+        import anyio
 
-    anyio.run(server.serve)
+        anyio.run(server.serve)
+    else:
+        logger.info("Starting TickTick MCP server via stdio")
+        mcp.run()
 
 
 if __name__ == "__main__":
